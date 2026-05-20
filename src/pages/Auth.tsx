@@ -65,13 +65,21 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-      extraParams: { hd: "sasa.hs.kr", prompt: "select_account" },
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          hd: "sasa.hs.kr",
+          prompt: "select_account",
+        },
+      },
     });
-    if (result.error) { setLoading(false); return toast.error("구글 로그인 실패"); }
-    if (result.redirected) return;
-    nav("/feed");
+    if (error) {
+      setLoading(false);
+      return toast.error("구글 로그인 실패", { description: error.message });
+    }
+    // Note: redirect happens automatically, so no need to call nav("/feed") here.
   };
 
   return (
