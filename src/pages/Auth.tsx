@@ -1,67 +1,30 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, Mail, Lock, User as UserIcon } from "lucide-react";
-import { z } from "zod";
-
-const emailSchema = z.string().email("올바른 이메일 형식이 아닙니다").max(255);
-const pwSchema = z.string().min(8, "비밀번호는 8자 이상").max(72);
-const nameSchema = z.string().trim().min(1, "이름을 입력하세요").max(40);
+import { Sparkles } from "lucide-react";
 
 const Auth = () => {
-  const [params] = useSearchParams();
   const nav = useNavigate();
   const { user } = useAuth();
-  const [tab, setTab] = useState(params.get("mode") === "signup" ? "signup" : "signin");
-  const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (user) nav("/feed", { replace: true }); }, [user, nav]);
+  useEffect(() => {
+    if (user) nav("/feed", { replace: true });
+  }, [user, nav]);
 
-  const validateSasa = (e: string) => {
-    if (!e.endsWith("@sasa.hs.kr")) {
-      toast.warning("SASA 이메일(@sasa.hs.kr) 사용을 권장합니다", { description: "다른 이메일도 사용 가능합니다." });
-    }
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      emailSchema.parse(email); pwSchema.parse(pw);
-    } catch (err: any) { toast.error(err.errors?.[0]?.message ?? "입력 확인"); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
-    setLoading(false);
-    if (error) return toast.error("로그인 실패", { description: error.message });
-    toast.success("환영합니다!");
-    nav("/feed");
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      emailSchema.parse(email); pwSchema.parse(pw); nameSchema.parse(name);
-    } catch (err: any) { toast.error(err.errors?.[0]?.message ?? "입력 확인"); return; }
-    validateSasa(email);
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password: pw,
-      options: { emailRedirectTo: window.location.origin, data: { display_name: name } },
-    });
-    setLoading(false);
-    if (error) return toast.error("가입 실패", { description: error.message });
-    toast.success("계정이 생성되었습니다!");
-    nav("/feed");
-  };
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && loading) {
+        setLoading(false);
+        toast.error("구글 로그인 실패");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loading]);
 
   const handleGoogle = async () => {
     setLoading(true);
@@ -69,17 +32,13 @@ const Auth = () => {
       provider: "google",
       options: {
         redirectTo: window.location.origin,
-        queryParams: {
-          hd: "sasa.hs.kr",
-          prompt: "select_account",
-        },
-      },
+        queryParams: { hd: "sasa.hs.kr", prompt: "select_account" },
+      }
     });
     if (error) {
       setLoading(false);
-      return toast.error("구글 로그인 실패", { description: error.message });
+      return toast.error("구글 로그인 실패");
     }
-    // Note: redirect happens automatically, so no need to call nav("/feed") here.
   };
 
   return (
@@ -94,7 +53,7 @@ const Auth = () => {
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <div className="font-display font-bold text-xl leading-none">사분만</div>
+            <div className="font-display font-bold text-xl leading-none">사 분 만</div>
             <div className="text-[10px] tracking-wider opacity-70">SASA LOST & FOUND</div>
           </div>
         </Link>
@@ -106,7 +65,7 @@ const Auth = () => {
             사진, 위치, 해시태그로 누구나 쉽게 분실물을 등록하고 찾아봅니다.
           </p>
         </div>
-        <div className="relative text-xs opacity-60">TEAM5 · 정과프 프로젝트</div>
+        <div className="relative text-xs opacity-60">2026 정보과학프로젝트</div>
       </div>
 
       <div className="flex items-center justify-center p-6 md:p-12 bg-background">
@@ -119,80 +78,11 @@ const Auth = () => {
           </Link>
 
           <h1 className="font-display text-3xl font-bold mb-2">
-            {tab === "signin" ? "다시 만나서 반가워요" : "시작해볼까요"}
+            다시 만나서 반가워요
           </h1>
           <p className="text-muted-foreground mb-8">
-            {tab === "signin" ? "계정으로 로그인하세요" : "SASA 이메일로 가입하세요"}
+            SASA 구글 계정으로 로그인해 주세요.
           </p>
-
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid grid-cols-2 w-full mb-6">
-              <TabsTrigger value="signin">로그인</TabsTrigger>
-              <TabsTrigger value="signup">회원가입</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="e1">이메일</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="e1" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@sasa.hs.kr" className="pl-9" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p1">비밀번호</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="p1" type="password" value={pw} onChange={(e) => setPw(e.target.value)}
-                      placeholder="8자 이상" className="pl-9" required />
-                  </div>
-                </div>
-                <Button type="submit" disabled={loading} className="w-full gradient-hero text-primary-foreground border-0">
-                  로그인
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="n2">이름</Label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="n2" value={name} onChange={(e) => setName(e.target.value)}
-                      placeholder="홍길동" className="pl-9" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="e2">이메일</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="e2" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@sasa.hs.kr" className="pl-9" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p2">비밀번호</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="p2" type="password" value={pw} onChange={(e) => setPw(e.target.value)}
-                      placeholder="8자 이상" className="pl-9" required />
-                  </div>
-                </div>
-                <Button type="submit" disabled={loading} className="w-full gradient-hero text-primary-foreground border-0">
-                  가입하기
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">또는</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
 
           <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={loading}>
             <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
@@ -203,10 +93,6 @@ const Auth = () => {
             </svg>
             Google로 계속하기
           </Button>
-
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            가입하면 <Link to="/" className="underline">서비스 약관</Link>에 동의하는 것입니다.
-          </p>
         </div>
       </div>
     </div>
