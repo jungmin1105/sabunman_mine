@@ -113,7 +113,7 @@ const PostDetail = () => {
               )}
               <div className="absolute top-4 left-4 flex gap-2">
                 <Badge className={`${typeStyle[post.type]} border-0 font-bold`}>{typeLabel[post.type]}</Badge>
-                {post.status === "resolved" && <Badge variant="secondary" className="bg-background/90 backdrop-blur">해결완료</Badge>}
+                {post.status === "resolved" && <Badge className="bg-red-500 text-white hover:bg-slate-800 border-0 font-bold">해결완료</Badge>}
               </div>
             </div>
           </div>
