@@ -148,7 +148,7 @@ const Feed = () => {
                       <div className="absolute top-3 left-3 flex gap-1.5">
                         <Badge className={`${typeStyle[p.type]} border-0 font-bold`}>{typeLabel[p.type]}</Badge>
                         {p.status === "resolved" && (
-                          <Badge variant="secondary" className="bg-background/80 backdrop-blur">해결완료</Badge>
+                          <Badge className="bg-red-500 text-white hover:bg-slate-800 border-0 font-bold">해결완료</Badge>
                         )}
                       </div>
                     </div>
